@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>騎士巡禮</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: #f4f4f4;
+      margin: 0;
+      padding: 20px;
+    }
+    h1 {
+      margin-bottom: 10px;
+    }
+    #intro {
+      max-width: 600px;
+      line-height: 1.6;
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+    #controls, #board, #message {
+      display: none;
+    }
+    button, select {
+      margin: 0 5px;
+      padding: 5px 10px;
+      font-size: 14px;
+    }
+    #board {
+      display: grid;
+      gap: 4px;
+      margin-bottom: 20px;
+    }
+    .cell {
+      width: 60px;
+      height: 60px;
+      background: white;
+      border: 1px solid #ccc;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      cursor: pointer;
+    }
+    .cell.visited {
+      background: #90ee90;
+      cursor: default;
+    }
+    .cell.available {
+      background: #add8e6;
+    }
+    .cell.last-move {
+      background: #ff6961 !important;
+    }
+    #message {
+      font-weight: bold;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>騎士巡禮</h1>
+
+  <div id="intro">
+    <h2>🎮 遊戲規則介紹</h2>
+    <p><strong>遊戲目標：</strong>使用騎士的走法走遍整個棋盤，每格只能走一次，完成全圖挑戰！</p>
+    <p><strong>騎士走法：</strong>可向前後左右跳兩格再轉彎一格（L 形），共八種可能。</p>
+    <p><strong>玩法說明：</strong></p>
+    <ul>
+      <li>點任意格子開始第一步</li>
+      <li>只能點擊合法位置（會顯示藍色提示）</li>
+      <li>每一步會顯示你走到的順序</li>
+      <li>無法移動時會顯示「挑戰失敗」</li>
+      <li>走滿所有格子則顯示「挑戰成功」</li>
+    </ul>
+    <button onclick="startGame()">開始遊戲</button>
+  </div>
+
+  <div id="controls">
+    <label for="size">棋盤大小：</label>
+    <select id="size" onchange="resetGame()">
+      <option value="5">5x5</option>
+      <option value="6">6x6</option>
+      <option value="7">7x7</option>
+      <option value="8">8x8</option>
+    </select>
+    <button onclick="undoMove()">返回上一步</button>
+    <button onclick="resetGame()">重新再玩一次</button>
+  </div>
+
+  <div id="board"></div>
+  <div id="message"></div>
+
+  <script>
+    const board = document.getElementById('board');
+    const message = document.getElementById('message');
+    const sizeSelect = document.getElementById('size');
+    const controls = document.getElementById('controls');
+    const intro = document.getElementById('intro');
+
+    let size = parseInt(sizeSelect.value);
+    let step, knightPos, visited, history;
+
+    function startGame() {
+      intro.style.display = 'none';
+      controls.style.display = 'block';
+      board.style.display = 'grid';
+      message.style.display = 'block';
+      resetGame();
+    }
+
+    function isInside(x, y) {
+      return x >= 0 && x < size && y >= 0 && y < size;
+    }
+
+    function getKnightMoves(x, y) {
+      const moves = [
+        [1, 2], [2, 1], [-1, 2], [-2, 1],
+        [1, -2], [2, -1], [-1, -2], [-2, -1]
+      ];
+      return moves
+        .map(([dx, dy]) => [x + dx, y + dy])
+        .filter(([nx, ny]) => isInside(nx, ny) && !visited[nx][ny]);
+    }
+
+    function clearAvailable() {
+      document.querySelectorAll('.cell').forEach(cell => {
+        cell.classList.remove('available');
+      });
+    }
+
+    function clearLastMove() {
+      document.querySelectorAll('.cell').forEach(cell => {
+        cell.classList.remove('last-move');
+      });
+    }
+
+    function showAvailableMoves(x, y) {
+      clearAvailable();
+      const moves = getKnightMoves(x, y);
+      moves.forEach(([nx, ny]) => {
+        const cell = document.querySelector(`[data-x="${nx}"][data-y="${ny}"]`);
+        cell.classList.add('available');
+      });
+
+      if (moves.length === 0) {
+        if (step <= size * size) {
+          setTimeout(() => message.textContent = "遊戲結束：無法繼續移動，挑戰失敗！", 100);
+        }
+      }
+    }
+
+    function handleClick(e) {
+      const cell = e.target;
+      const x = +cell.dataset.x;
+      const y = +cell.dataset.y;
+      if (knightPos === null || cell.classList.contains('available')) {
+        clearLastMove();
+        visited[x][y] = true;
+        cell.textContent = step;
+        cell.classList.add('visited', 'last-move');
+        history.push({ x, y, step });
+        clearAvailable();
+        knightPos = [x, y];
+        step++;
+        if (step > size * size) {
+          message.textContent = "恭喜完成挑戰！";
+        } else {
+          showAvailableMoves(x, y);
+        }
+      }
+    }
+
+    function undoMove() {
+      if (history.length === 0) return;
+      clearLastMove();
+      const last = history.pop();
+      visited[last.x][last.y] = false;
+      const cell = document.querySelector(`[data-x="${last.x}"][data-y="${last.y}"]`);
+      cell.textContent = '';
+      cell.classList.remove('visited', 'last-move');
+      step = last.step;
+      knightPos = history.length > 0 ? [history[history.length - 1].x, history[history.length - 1].y] : null;
+      if (knightPos) {
+        const lastCell = document.querySelector(`[data-x="${knightPos[0]}"][data-y="${knightPos[1]}"]`);
+        lastCell.classList.add('last-move');
+      }
+      message.textContent = '';
+      if (knightPos) {
+        showAvailableMoves(knightPos[0], knightPos[1]);
+      } else {
+        clearAvailable();
+      }
+    }
+
+    function resetGame() {
+      size = parseInt(sizeSelect.value);
+      board.innerHTML = '';
+      board.style.gridTemplateColumns = `repeat(${size}, 60px)`;
+      board.style.gridTemplateRows = `repeat(${size}, 60px)`;
+      step = 1;
+      knightPos = null;
+      history = [];
+      visited = Array(size).fill(null).map(() => Array(size).fill(false));
+      message.textContent = '';
+      for (let x = 0; x < size; x++) {
+        for (let y = 0; y < size; y++) {
+          const cell = document.createElement('div');
+          cell.classList.add('cell');
+          if ((x + y) % 2 === 0) {
+            cell.style.backgroundColor = '#f0d9b5';
+          } else {
+            cell.style.backgroundColor = '#b58863';
+          }
+          cell.dataset.x = x;
+          cell.dataset.y = y;
+          cell.addEventListener('click', handleClick);
+          board.appendChild(cell);
+        }
+      }
+    }
+  </script>
+</body>
+</html>
