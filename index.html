@@ -3,6 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <title>騎士巡禮</title>
+  <link rel="icon" href="https://upload.wikimedia.org/wikipedia/commons/7/70/Chess_nlt45.svg" type="image/svg+xml">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body {
       font-family: sans-serif;
@@ -25,7 +27,7 @@
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
       margin-bottom: 20px;
     }
-    #controls, #board, #message {
+    #controls, #board, #message, #share {
       display: none;
     }
     button, select {
@@ -37,6 +39,8 @@
       display: grid;
       gap: 4px;
       margin-bottom: 20px;
+      max-width: 100vw;
+      overflow: auto;
     }
     .cell {
       width: 60px;
@@ -62,6 +66,15 @@
     #message {
       font-weight: bold;
       margin-top: 10px;
+    }
+    #share a {
+      display: inline-block;
+      margin: 10px 5px;
+      text-decoration: none;
+      padding: 6px 12px;
+      background: #0072ff;
+      color: white;
+      border-radius: 6px;
     }
   </style>
 </head>
@@ -98,12 +111,19 @@
   <div id="board"></div>
   <div id="message"></div>
 
+  <div id="share">
+    <h3>📢 分享給朋友挑戰：</h3>
+    <a href="https://line.me/R/msg/text/?快來挑戰這個騎士巡禮遊戲！%0Ahttps://andyfansci.github.io/Knight-tour/" target="_blank">分享 LINE</a>
+    <a href="https://www.facebook.com/sharer/sharer.php?u=https://andyfansci.github.io/Knight-tour/" target="_blank">分享 Facebook</a>
+  </div>
+
   <script>
     const board = document.getElementById('board');
     const message = document.getElementById('message');
     const sizeSelect = document.getElementById('size');
     const controls = document.getElementById('controls');
     const intro = document.getElementById('intro');
+    const share = document.getElementById('share');
 
     let size = parseInt(sizeSelect.value);
     let step, knightPos, visited, history;
@@ -113,6 +133,7 @@
       controls.style.display = 'block';
       board.style.display = 'grid';
       message.style.display = 'block';
+      share.style.display = 'block';
       resetGame();
     }
 
@@ -171,7 +192,7 @@
         knightPos = [x, y];
         step++;
         if (step > size * size) {
-          message.textContent = "恭喜完成挑戰！";
+          message.textContent = "🎉 恭喜完成挑戰！";
         } else {
           showAvailableMoves(x, y);
         }
